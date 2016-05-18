@@ -31,7 +31,12 @@ public class Coordinate {
     }
 
     @Override
+    public String toString() {
+        return "(" + x + ", " + y + ")";
+    }
+
+    @Override
     public boolean equals(Object o) {
-        return  (this.x == ((Coordinate)o).getX()) && (this.y == ((Coordinate)o).getY());
+        return (this.x == ((Coordinate) o).getX()) && (this.y == ((Coordinate) o).getY());
     }
 }

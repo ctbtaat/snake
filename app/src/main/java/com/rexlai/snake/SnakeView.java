@@ -5,73 +5,27 @@ import android.content.res.Resources;
 import android.os.Handler;
 import android.os.Message;
 import android.util.AttributeSet;
-import android.view.MotionEvent;
-import android.widget.TextView;
 
 import java.util.Random;
 
 /**
  * Created by rexlai on 2016/5/17.
  */
-public class SnakeView extends TileView {
+public class SnakeView extends TileView implements GameController {
 
-    private static final String TAG = "SnakeView";
-
-    /**
-     * Current mode of application: READY to run, RUNNING, or you have already
-     * lost. static final ints are used instead of an enum for performance
-     * reasons.
-     */
-    private int mMode = READY;
-    public static final int PAUSE = 0;
-    public static final int READY = 1;
-    public static final int RUNNING = 2;
-    public static final int LOSE = 3;
-
-    /**
-     * Labels for the drawables that will be loaded into the TileView class
-     */
-    private static final int SNAKE_HEAD = 1;
-    private static final int SNAKE_BODY = 2;
+    private static final int SNAKE_BODY = 1;
+    private static final int SNAKE_HEAD = 2;
     private static final int WALL = 3;
 
-    /**
-     * mScore: used to track the number of apples captured mMoveDelay: number of
-     * milliseconds between snake movements. This will decrease as apples are
-     * captured.
-     */
-    private long mScore = 0;
-    // TODO private long mMoveDelay = 600;
-    /**
-     * mLastMove: tracks the absolute time when the snake last moved, and is
-     * used to determine if a move should be made based on mMoveDelay.
-     */
-    // TODO private long mLastMove;
-
-    /**
-     * mStatusText: text shows to the user in some run states
-     */
-    private TextView mStatusText;
-
-    /**
-     * mSnakeTrail: a list of Coordinates that make up the snake's body
-     * snakeFoodList: the secret location of the juicy apples the snake craves.
-     */
+    private Snake snake;
     private Coordinate snakeFood;
+    private Random rnd = new Random();
+    private GameRefreshHandler refreshHandler = new GameRefreshHandler();
+    private GameStatus status = GameStatus.NEW;
+    private GameStatusListener listener;
+    private long gameSpeed;
 
-    /**
-     * Everyone needs a little randomness in their life
-     */
-    private static final Random rnd = new Random();
-
-    /**
-     * Create a simple handler that we can use to cause animation to happen. We
-     * set ourselves as a target and we can use the sleep() function to cause an
-     * update/invalidate to occur at a later date.
-     */
-    private RefreshHandler refreshHandler = new RefreshHandler();
-
-    class RefreshHandler extends Handler {
+    private class GameRefreshHandler extends Handler {
 
         @Override
         public void handleMessage(Message msg) {
@@ -103,11 +57,12 @@ public class SnakeView extends TileView {
         initSnakeView();
     }
 
+    /**
+     * Initial the snake view, head, body and wall.
+     */
     private void initSnakeView() {
         setFocusable(true);
-
         Resources r = this.getContext().getResources();
-
         resetTiles(4);
         loadTile(SNAKE_BODY, r.getDrawable(R.drawable.body));
         loadTile(SNAKE_HEAD, r.getDrawable(R.drawable.head));
@@ -115,82 +70,36 @@ public class SnakeView extends TileView {
 
     }
 
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        initNewGame();
-        update();
-        return super.onTouchEvent(event);
-    }
-
-    private void initNewGame() {
+    /**
+     * Initial new snake, food, gameSpeed determine refresh rate.
+     * @param gameSpeed
+     */
+    public void initNewGame(long gameSpeed) {
+        this.gameSpeed = gameSpeed;
         initSnake();
         addRandomFood();
-        mScore = 0;
+        update();
+        layoutScreen();
     }
 
-    private Snake snake;
-
+    /**
+     * Initial snake start position, and it will be inside wall
+     */
     private void initSnake() {
         int x = 1 + rnd.nextInt(xTileCount - 2);
         int y = 1 + rnd.nextInt(yTileCount - 2);
         snake = new Snake();
         if (x + snake.getSnake().length() >= xTileCount) {
-            x = xTileCount - snake.getSnake().length();
+            x = xTileCount - snake.getSnake().length() - 1;
         }
         snake.setSnakeHead(new Coordinate(x, y));
     }
 
-
     /**
-     * Sets the TextView that will be used to give information (such as "Game
-     * Over" to the user.
-     *
-     * @param newView
-     */
-    public void setTextView(TextView newView) {
-        mStatusText = newView;
-    }
-
-    /**
-     * Updates the current mode of the application (RUNNING or PAUSED or the
-     * like) as well as sets the visibility of textview for notification
-     *
-     * @param newMode
-     */
-    public void setMode(int newMode) {
-        int oldMode = mMode;
-        mMode = newMode;
-
-        if (newMode == RUNNING & oldMode != RUNNING) {
-//            mStatusText.setVisibility(View.INVISIBLE);
-            update();
-            return;
-        }
-
-        Resources res = getContext().getResources();
-        CharSequence str = "";
-//        if (newMode == PAUSE) {
-//            str = res.getText(R.string.mode_pause);
-//        }
-//        if (newMode == READY) {
-//            str = res.getText(R.string.mode_ready);
-//        }
-//        if (newMode == LOSE) {
-//            str = res.getString(R.string.mode_lose_prefix) + mScore + res.getString(R.string.mode_lose_suffix);
-//        }
-
-//        mStatusText.setText(str);
-//        mStatusText.setVisibility(View.VISIBLE);
-    }
-
-    /**
-     * Selects a random location within the garden that is not currently covered
-     * by the snake. Currently _could_ go into an infinite loop if the snake
-     * currently fills the garden, but we'll leave discovery of this prize to a
-     * truly excellent snake-player.
+     * Random position to add food, need check the snake position and don't add on snake.
      */
     private void addRandomFood() {
-        Coordinate newFood = null;
+        Coordinate newFood;
         boolean overlapping = false;
         do {
             int x = 1 + rnd.nextInt(xTileCount - 2);
@@ -208,29 +117,29 @@ public class SnakeView extends TileView {
     }
 
     /**
-     * Handles the basic update loop, checking to see if we are in the running
-     * state, determining if a move should be made, updating the snake's
-     * location.
+     * Update the snake location when game status is playing,
+     * the speed determine snake refresh rate.
      */
-    public void update() {
-//        if (mMode == RUNNING) {
-			/*
-			 * TODO long now = System.currentTimeMillis();
-			 *
-			 * if (now - mLastMove > mMoveDelay) { clearTiles(); updateWalls();
-			 * updateSnake(); updateApples(); mLastMove = now; }
-			 */
+    private void update() {
+        if (status == GameStatus.PLAYING) {
+            layoutScreen();
+            snake.move();
+        }
+        refreshHandler.sleep(gameSpeed);
+    }
+
+    /**
+     * Clean all item, and redraw wall, snake, and food.
+     */
+    private void layoutScreen() {
         clearTiles();
         updateWalls();
         updateSnake();
         updateFood();
-//        }
-        snake.move();
-        refreshHandler.sleep(Snake.speed);
     }
 
     /**
-     * Draws some walls.
+     * Draw the walls.
      */
     private void updateWalls() {
         for (int x = 0; x < xTileCount; x++) {
@@ -244,21 +153,32 @@ public class SnakeView extends TileView {
     }
 
     /**
-     * Draws some apples.
+     * Draw the food.
      */
     private void updateFood() {
-        setTile(SNAKE_BODY, snakeFood.getX(), snakeFood.getX());
+        setTile(SNAKE_BODY, snakeFood.getX(), snakeFood.getY());
     }
 
     /**
-     * Figure out which way the snake is going, see if he's run into anything
-     * (the walls, himself, or an apple). If he's not going to die, we then add
-     * to the front and subtract from the rear in order to simulate motion. If
-     * we want to grow him, we don't subtract from the rear.
+     * In this function, first, it will determine snake eats food or not,
+     * second, it will determine the snake out of boundary,
+     * and layout the snake.
      */
     private void updateSnake() {
         if (snake.getSnakeHead().equals(snakeFood)) {
             snake.eatFood();
+            listener.scored();
+            addRandomFood();
+        } else {
+            int snakeHeadX = snake.getSnakeHead().getX();
+            int snakeHeadY = snake.getSnakeHead().getY();
+            if (snakeHeadX <= 0 || snakeHeadY <= 0) {
+                changeStatus(GameStatus.OVER);
+                listener.gameOver();
+            } else if (snakeHeadX + 1 >= xTileCount || snakeHeadY + 1 >= yTileCount) {
+                changeStatus(GameStatus.OVER);
+                listener.gameOver();
+            }
         }
 
         snake.layoutSnack(new SnakeGenerator() {
@@ -273,5 +193,27 @@ public class SnakeView extends TileView {
             }
         });
     }
+
+    public void setGameStatusListener(GameStatusListener listener) {
+        this.listener = listener;
+    }
+
+    @Override
+    public void changeDirection(Direction direction) {
+        if (status == GameStatus.PLAYING && direction != null && snake != null) {
+            snake.moveDirection(direction);
+        }
+    }
+
+    @Override
+    public GameStatus getGameStatus() {
+        return status;
+    }
+
+    @Override
+    public void changeStatus(GameStatus status) {
+        this.status = status;
+    }
+
 }
 

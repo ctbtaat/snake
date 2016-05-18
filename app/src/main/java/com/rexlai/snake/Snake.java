@@ -8,11 +8,9 @@ import java.util.List;
  */
 public class Snake {
 
-    public static final long speed = 100L;
-
     private String snake = "LRRR";
 
-    private boolean eat;
+    private boolean eat = false;
 
     private Coordinate snakeHead;
 
@@ -27,25 +25,42 @@ public class Snake {
         return "" + snake.charAt(0);
     }
 
-    public void moveUp() {
+    public void moveDirection(Direction direction) {
+        switch (direction) {
+            case UP:
+                moveUp();
+                break;
+            case DOWN:
+                moveDown();
+                break;
+            case RIGHT:
+                moveRight();
+                break;
+            case LEFT:
+                moveLeft();
+                break;
+        }
+    }
+
+    private void moveUp() {
         if (!"D".equals(getCurrentDirection())) {
             snake = "U" + snake.substring(1);
         }
     }
 
-    public void moveDown() {
+    private void moveDown() {
         if (!"U".equals(getCurrentDirection())) {
             snake = "D" + snake.substring(1);
         }
     }
 
-    public void moveLeft() {
+    private void moveLeft() {
         if (!"R".equals(getCurrentDirection())) {
             snake = "L" + snake.substring(1);
         }
     }
 
-    public void moveRight() {
+    private void moveRight() {
         if (!"L".equals(getCurrentDirection())) {
             snake = "R" + snake.substring(1);
         }

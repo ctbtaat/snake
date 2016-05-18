@@ -7,5 +7,22 @@
     <string name="button_new_game">New</string>
     <string name="button_pause">Pause</string>
     <string name="button_resume">Resume</string>
+    <string name="game_over">Game Over!</string>
+    <string name="scored">Scored:%d</string>
+    <string name="ok">OK</string>
+    <string name="start">Start</string>
+    <string name="difficulty">Level:%s</string>
 
+    <string-array name="level">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+        <item>8</item>
+        <item>9</item>
+    </string-array>
 </resources>
+

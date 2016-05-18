@@ -1,7 +1,6 @@
 package com.rexlai.snake;
 
 import android.content.Context;
-import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -12,14 +11,14 @@ import android.view.View;
 /**
  * Created by rexlai on 2016/5/17.
  */
-public class TileView extends View{
+public class TileView extends View {
     /**
      * Parameters controlling the size of the tiles and their range within view.
      * Width/Height are in pixels, and Drawables will be scaled to fit to these
      * dimensions. X/Y Tile Counts are the number of tiles that will be drawn.
      */
 
-    protected static int tileSize;
+    protected static int tileSize = 36;
 
     protected static int xTileCount;
     protected static int yTileCount;
@@ -44,24 +43,11 @@ public class TileView extends View{
 
     public TileView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
-
-        TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.TileView);
-
-        tileSize = a.getInt(R.styleable.TileView_tileSize, 36);
-
-        a.recycle();
     }
 
     public TileView(Context context, AttributeSet attrs) {
         super(context, attrs);
-
-        TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.TileView);
-
-        tileSize = a.getInt(R.styleable.TileView_tileSize, 36);
-
-        a.recycle();
     }
-
 
 
     /**
@@ -106,7 +92,6 @@ public class TileView extends View{
 
     /**
      * Resets all tiles to 0 (empty)
-     *
      */
     public void clearTiles() {
         for (int x = 0; x < xTileCount; x++) {
@@ -133,8 +118,6 @@ public class TileView extends View{
     @Override
     public void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-//        Log.e("debug", "xTileCount:" + xTileCount);
-//        Log.e("debug", "yTileCount:" + yTileCount);
         for (int x = 0; x < xTileCount; x += 1) {
             for (int y = 0; y < yTileCount; y += 1) {
                 if (tileGrid[x][y] > 0) {
